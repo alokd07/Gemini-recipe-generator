@@ -1,44 +1,16 @@
+
 "use client";
 
 import type { SuggestRecipeOutput } from "@/ai/flows/suggest-recipe";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Lightbulb } from "lucide-react";
 
 interface RecipeDisplayProps {
   recipeOutput: SuggestRecipeOutput;
 }
 
-function formatRecipeText(text: string) {
-  // Basic formatting: split by newlines, treat lines starting with "Ingredients:" or "Instructions:" as headers.
-  const lines = text.split('\\n').map(line => line.trim()).filter(line => line.length > 0);
-  let inIngredients = false;
-  let inInstructions = false;
-
-  return lines.map((line, index) => {
-    const lowerLine = line.toLowerCase();
-    if (lowerLine.startsWith("ingredients:")) {
-      inIngredients = true;
-      inInstructions = false;
-      return <h4 key={index} className="font-semibold mt-2 mb-1 text-lg">{line}</h4>;
-    }
-    if (lowerLine.startsWith("instructions:") || lowerLine.startsWith("steps:")) {
-      inInstructions = true;
-      inIngredients = false;
-      return <h4 key={index} className="font-semibold mt-2 mb-1 text-lg">{line}</h4>;
-    }
-    if (inIngredients && (line.startsWith("-") || line.startsWith("*"))) {
-      return <li key={index} className="ml-4 list-disc">{line.substring(1).trim()}</li>;
-    }
-    if (inInstructions && /^\d+\./.test(line)) {
-       return <li key={index} className="ml-4 list-decimal">{line.substring(line.indexOf(".") + 1).trim()}</li>;
-    }
-    return <p key={index} className="mb-1">{line}</p>;
-  });
-}
-
-
 export function RecipeDisplay({ recipeOutput }: RecipeDisplayProps) {
-  if (!recipeOutput || recipeOutput.recipes.length === 0) {
+  if (!recipeOutput || !recipeOutput.recipes || recipeOutput.recipes.length === 0) {
     return (
       <div className="text-center py-10">
         <Lightbulb className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
@@ -54,10 +26,33 @@ export function RecipeDisplay({ recipeOutput }: RecipeDisplayProps) {
       {recipeOutput.recipes.map((recipe, index) => (
         <Card key={index} className="shadow-lg hover:shadow-xl transition-shadow duration-300">
           <CardHeader>
-            <CardTitle className="text-xl text-accent-foreground">Recipe Idea {index + 1}</CardTitle>
+            <CardTitle className="text-2xl text-accent-foreground">{recipe.title || `Recipe Idea ${index + 1}`}</CardTitle>
           </CardHeader>
-          <CardContent className="prose prose-sm max-w-none dark:prose-invert prose-headings:text-accent-foreground prose-p:text-foreground prose-li:text-foreground">
-             {formatRecipeText(recipe)}
+          <CardContent className="space-y-4">
+            <div>
+              <h3 className="text-xl font-semibold mb-2 text-primary">Ingredients:</h3>
+              {recipe.ingredients && recipe.ingredients.length > 0 ? (
+                <ul className="list-disc pl-5 space-y-1 text-foreground">
+                  {recipe.ingredients.map((ingredient, i) => (
+                    <li key={`ingredient-${index}-${i}`}>{ingredient}</li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-muted-foreground">No ingredients listed.</p>
+              )}
+            </div>
+            <div>
+              <h3 className="text-xl font-semibold mb-2 text-primary">Instructions:</h3>
+              {recipe.instructions && recipe.instructions.length > 0 ? (
+                <ol className="list-decimal pl-5 space-y-2 text-foreground">
+                  {recipe.instructions.map((step, i) => (
+                    <li key={`instruction-${index}-${i}`}>{step}</li>
+                  ))}
+                </ol>
+              ) : (
+                <p className="text-muted-foreground">No instructions provided.</p>
+              )}
+            </div>
           </CardContent>
         </Card>
       ))}
